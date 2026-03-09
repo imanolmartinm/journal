@@ -15,8 +15,8 @@
 :root {
   --bg:#0f0f0f; --surface:#161616; --surface2:#1e1e1e; --border:#252525; --border2:#303030;
   --green:#5a9a72; --green-dim:#5a9a7215; --red:#9a5a5a; --red-dim:#9a5a5a15;
-  --amber:#9a8a50; --amber-dim:#9a8a5015; --blue:#5a7aaa; --blue-dim:#5a7aaa15;
-  --text:#e0e0e0; --muted:#555; --muted2:#252525;
+  --amber:#9a8a50; --amber-dim:#9a8a5015; --blue:#4d9fff; --blue-dim:#4d9fff18;
+  --text:#f0f0f0; --muted:#777; --muted2:#252525;
 }
 html.light {
   --bg:#f5f6f8; --surface:#ffffff; --surface2:#f0f1f4; --border:#e2e4e9; --border2:#d0d3da;
@@ -171,7 +171,7 @@ tr:hover td{background:var(--surface2);}
 <body>
 
 <nav>
-  <div class="nav-brand">JOURNAL</div>
+  <div class="nav-brand">MXOEDGE</div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</button>
     <button class="nav-tab" onclick="showPage('trades',this)">Trades</button>
@@ -193,11 +193,62 @@ tr:hover td{background:var(--surface2);}
 <!-- DASHBOARD -->
 <div id="page-dashboard" class="page active">
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Net P/L</div><div class="kpi-value g" id="k-pnl">$0.00</div></div>
-    <div class="kpi"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="k-wr">0%</div></div>
-    <div class="kpi"><div class="kpi-label">Avg RR</div><div class="kpi-value b" id="k-rr">0.00</div></div>
-    <div class="kpi"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="k-pf">0.00</div></div>
-    <div class="kpi"><div class="kpi-label">Trades</div><div class="kpi-value" id="k-total">0</div></div>
+
+    <!-- NET P&L -->
+    <div class="kpi" style="min-height:90px">
+      <div class="kpi-label">Net P&L</div>
+      <div class="kpi-value" id="k-pnl" style="font-size:28px;margin-top:4px">$0.00</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px" id="k-trades-sub">0 trades</div>
+    </div>
+
+    <!-- WIN RATE gauge -->
+    <div class="kpi" style="min-height:90px">
+      <div class="kpi-label">Win Rate</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+        <div>
+          <div class="kpi-value" id="k-wr" style="font-size:26px">0%</div>
+          <div style="display:flex;gap:6px;margin-top:6px" id="k-wr-counts"></div>
+        </div>
+        <div style="flex:1;display:flex;justify-content:flex-end">
+          <canvas id="kpi-wr-gauge" width="80" height="50"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFIT FACTOR donut -->
+    <div class="kpi" style="min-height:90px">
+      <div class="kpi-label">Profit Factor</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+        <div class="kpi-value" id="k-pf" style="font-size:26px">0.00</div>
+        <div style="flex:1;display:flex;justify-content:flex-end">
+          <canvas id="kpi-pf-donut" width="60" height="60"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- AVG RR bar -->
+    <div class="kpi" style="min-height:90px">
+      <div class="kpi-label">Avg RR</div>
+      <div class="kpi-value" id="k-rr" style="font-size:26px;margin-top:4px">0.00</div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:9px;color:var(--muted)" id="k-avgwin-lbl">Avg W</span>
+          <span style="font-size:9px;color:var(--muted)" id="k-avgloss-lbl">Avg L</span>
+        </div>
+        <div style="height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;display:flex">
+          <div id="k-rr-bar-w" style="height:100%;background:var(--green);transition:width .4s"></div>
+          <div id="k-rr-bar-l" style="height:100%;background:var(--red);transition:width .4s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOTAL TRADES -->
+    <div class="kpi" style="min-height:90px">
+      <div class="kpi-label">Trades</div>
+      <div class="kpi-value" id="k-total" style="font-size:28px;margin-top:4px">0</div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px" id="k-breakdown"></div>
+    </div>
+
   </div>
 
   <!-- PROFIT CALENDAR -->
@@ -694,28 +745,133 @@ function renderAll(){
 
 // ── KPIs ──────────────────────────────────────────────────────────────
 function renderKPIs(){
-  const pnl=getPnL(trades);
-  const bal=settings.accountStart+pnl;
-  const wr=getWR(trades);
-  const avgRR=trades.length?trades.reduce((s,t)=>s+(parseFloat(t.rr)||0),0)/trades.length:0;
-  const pf=getPF(trades);
+  const pnl = getPnL(trades);
+  const wr  = getWR(trades);
+  const pf  = getPF(trades);
+  const wins   = trades.filter(t=>(parseFloat(t.result)||0)>0);
+  const losses = trades.filter(t=>(parseFloat(t.result)||0)<0);
+  const bes    = trades.filter(t=>(parseFloat(t.result)||0)===0);
+  const avgRR  = trades.length ? trades.reduce((s,t)=>s+(parseFloat(t.rr)||0),0)/trades.length : 0;
+  const avgW   = wins.length   ? wins.reduce((s,t)=>s+(parseFloat(t.result)||0),0)/wins.length : 0;
+  const avgL   = losses.length ? Math.abs(losses.reduce((s,t)=>s+(parseFloat(t.result)||0),0)/losses.length) : 0;
 
   const set=(id,val,cls)=>{ const el=document.getElementById(id); if(!el) return; el.textContent=val; el.className='kpi-value '+cls; };
-  set('k-pnl',fmt$(pnl),pnl>=0?'g':'r');
-  set('k-wr',fmtPct(wr),wr>=0.5?'g':wr>=0.4?'a':'r');
-  set('k-rr',avgRR.toFixed(2),'b');
-  set('k-pf',pf.toFixed(2),pf>=1.5?'g':pf>=1?'a':'r');
-  set('k-total',trades.length,'');
+
+  set('k-pnl', fmt$(pnl), pnl>=0?'g':'r');
+  const sub = document.getElementById('k-trades-sub');
+  if(sub) sub.textContent = trades.length + ' trade' + (trades.length!==1?'s':'');
+
+  set('k-wr', fmtPct(wr), wr>=0.5?'g':wr>=0.4?'a':'r');
+  const wrc = document.getElementById('k-wr-counts');
+  if(wrc) wrc.innerHTML =
+    `<span style="font-size:9px;background:var(--green-dim);color:var(--green);padding:2px 6px;border-radius:3px">${wins.length}W</span>` +
+    (bes.length?`<span style="font-size:9px;background:var(--amber-dim);color:var(--amber);padding:2px 6px;border-radius:3px">${bes.length}BE</span>`:'') +
+    `<span style="font-size:9px;background:var(--red-dim);color:var(--red);padding:2px 6px;border-radius:3px">${losses.length}L</span>`;
+
+  set('k-pf', pf.toFixed(2), pf>=1.5?'g':pf>=1?'a':'r');
+
+  set('k-rr', avgRR.toFixed(2), 'b');
+  const total = avgW + avgL;
+  const wPct = total>0 ? (avgW/total*100) : 50;
+  const lPct = total>0 ? (avgL/total*100) : 50;
+  const bw = document.getElementById('k-rr-bar-w');
+  const bl = document.getElementById('k-rr-bar-l');
+  if(bw) bw.style.width = wPct+'%';
+  if(bl) bl.style.width = lPct+'%';
+  const wl = document.getElementById('k-avgwin-lbl');
+  const ll = document.getElementById('k-avgloss-lbl');
+  if(wl) wl.textContent = 'Avg W ' + fmt$(avgW);
+  if(ll) ll.textContent = 'Avg L -' + fmt$(avgL);
+
+  set('k-total', trades.length, '');
+  const bd = document.getElementById('k-breakdown');
+  if(bd) bd.innerHTML =
+    `<div style="display:flex;justify-content:space-between"><span style="font-size:9px;color:var(--green)">${wins.length} wins</span><span style="font-size:9px;color:var(--red)">${losses.length} losses</span></div>` +
+    `<div style="height:4px;border-radius:2px;background:var(--surface2);overflow:hidden;display:flex;margin-top:2px">
+      <div style="width:${trades.length?wins.length/trades.length*100:0}%;background:var(--green);height:100%"></div>
+      <div style="width:${trades.length?losses.length/trades.length*100:0}%;background:var(--red);height:100%"></div>
+    </div>`;
+
+  setTimeout(()=>{
+    drawKpiSparkline();
+    drawWRGauge(wr, wins.length, losses.length, bes.length);
+    drawPFDonut(pf);
+  }, 50);
+}
+
+function drawKpiSparkline(){
+  const canvas = document.getElementById('kpi-sparkline');
+  if(!canvas || !trades.length) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio||1;
+  const w = canvas.parentElement.offsetWidth||200, h = 50;
+  canvas.width = w*dpr; canvas.height = h*dpr;
+  canvas.style.width = w+'px'; canvas.style.height = h+'px';
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+  const sorted = [...trades].sort((a,b)=>a.date.localeCompare(b.date));
+  let cum=0;
+  const pts = sorted.map(t=>{ cum+=parseFloat(t.result)||0; return cum; });
+  if(pts.length<2) return;
+  const min=Math.min(0,...pts), max=Math.max(0,...pts);
+  const range=max-min||1;
+  const xs=pts.map((_,i)=>i/(pts.length-1)*w);
+  const ys=pts.map(p=>h-((p-min)/range)*(h-2)-1);
+  const isPos=pts[pts.length-1]>=0;
+  const col=isPos?'rgba(0,200,122,':'rgba(255,59,48,';
+  ctx.beginPath(); ctx.moveTo(xs[0],ys[0]);
+  for(let i=1;i<xs.length;i++) ctx.lineTo(xs[i],ys[i]);
+  ctx.strokeStyle=col+'0.9)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.lineTo(xs[xs.length-1],h); ctx.lineTo(xs[0],h); ctx.closePath();
+  const grad=ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,col+'0.35)'); grad.addColorStop(1,col+'0)');
+  ctx.fillStyle=grad; ctx.fill();
+}
+
+function drawWRGauge(wr,w,l,be){
+  const canvas=document.getElementById('kpi-wr-gauge');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=80,H=50,cx=40,cy=46,r=30;
+  canvas.width=W; canvas.height=H;
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,0);
+  ctx.strokeStyle=isLM()?'#e0e0e0':'#252525'; ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
+  const total=w+l+be||1;
+  if(w>0){
+    ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,Math.PI+Math.PI*(w/total));
+    ctx.strokeStyle=cPos(); ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
+  }
+  if(l>0){
+    const lStart=Math.PI+Math.PI*((w+be)/total);
+    ctx.beginPath(); ctx.arc(cx,cy,r,lStart,0);
+    ctx.strokeStyle=cNeg(); ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
+  }
+}
+
+function drawPFDonut(pf){
+  const canvas=document.getElementById('kpi-pf-donut');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const S=60,cx=30,cy=30,r=22;
+  canvas.width=S; canvas.height=S;
+  ctx.clearRect(0,0,S,S);
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle=isLM()?'#e0e0e0':'#252525'; ctx.lineWidth=7; ctx.stroke();
+  const pct=Math.min(pf/3,1);
+  const col=pf>=1.5?cPos():pf>=1?'rgba(154,138,80,0.85)':cNeg();
+  ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*pct);
+  ctx.strokeStyle=col; ctx.lineWidth=7; ctx.lineCap='round'; ctx.stroke();
 }
 
 // ── DASHBOARD CHARTS ──────────────────────────────────────────────────
 
 // ── CHART THEME HELPERS ───────────────────────────────────────────────
 const isLM = () => document.documentElement.classList.contains('light');
-const cPos   = () => isLM() ? 'rgba(45,122,74,0.85)'  : 'rgba(90,154,114,0.85)';
-const cNeg   = () => isLM() ? 'rgba(138,48,48,0.85)'  : 'rgba(154,90,90,0.85)';
-const cPosA  = () => isLM() ? 'rgba(45,122,74,0.15)'  : 'rgba(90,154,114,0.2)';
-const cNegA  = () => isLM() ? 'rgba(138,48,48,0.15)'  : 'rgba(154,90,90,0.2)';
+const cPos   = () => isLM() ? 'rgba(90,154,114,0.85)'  : 'rgba(90,154,114,0.85)';
+const cNeg   = () => isLM() ? 'rgba(154,90,90,0.85)'  : 'rgba(154,90,90,0.85)';
+const cPosA  = () => isLM() ? 'rgba(90,154,114,0.15)'  : 'rgba(90,154,114,0.2)';
+const cNegA  = () => isLM() ? 'rgba(154,90,90,0.15)'  : 'rgba(154,90,90,0.2)';
 const cBlue  = () => isLM() ? 'rgba(42,80,144,0.8)'   : 'rgba(90,122,170,0.8)';
 const cBlueA = () => isLM() ? 'rgba(42,80,144,0.15)'  : 'rgba(90,122,170,0.2)';
 const cGrid  = () => isLM() ? '#e8eaed' : '#1e1e1e';
@@ -1582,7 +1738,7 @@ function saveReview(){
 function renderReviewHistory(){
   const sorted = [...reviews].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!sorted.length){ document.getElementById('rev-history').innerHTML=''; return; }
-  let html = '<div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px">Historial</div>';
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">Historial</div><button onclick="resetReviews()" style="background:none;border:1px solid var(--border2);color:var(--muted);padding:4px 10px;border-radius:4px;font-family:\'Inter\',sans-serif;font-size:10px;cursor:pointer" onmouseover="this.style.color=\'var(--red)\';this.style.borderColor=\'var(--red)\'" onmouseout="this.style.color=\'var(--muted)\';this.style.borderColor=\'var(--border2)\'">Reset</button></div>';
   sorted.forEach(r=>{
     const score = REV_QUESTIONS.filter(q=>r[q.key]===true).length;
     const total = REV_QUESTIONS.filter(q=>r[q.key]!==null && r[q.key]!==undefined).length;
@@ -1600,6 +1756,13 @@ function renderReviewHistory(){
     </div>`;
   });
   document.getElementById('rev-history').innerHTML = html;
+}
+
+function resetReviews(){
+  if(!confirm('¿Borrar todo el historial de Daily Reviews?')) return;
+  reviews = [];
+  saveReviews();
+  renderReviewPage();
 }
 
 function loadReview(date){
