@@ -26,7 +26,7 @@ html.light {
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;background-image:radial-gradient(circle at 20% 50%, #1c1e2208 0%, transparent 50%), radial-gradient(circle at 80% 20%, #15171a10 0%, transparent 40%);}
-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .nav-brand{font-family:'Inter',sans-serif;font-weight:800;font-size:15px;letter-spacing:2px;color:var(--text);opacity:.85;}
 .nav-tabs{display:flex;gap:3px;}
 .nav-tab{padding:5px 14px;border-radius:3px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .2s;font-family:'Inter',sans-serif;}
@@ -40,13 +40,13 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40
 /* KPIs */
 .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px 24px;transition:border-color .2s;}.kpi:hover{border-color:var(--border2);}
-.kpi-label{font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;}
+.kpi-label{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:6px;}
 .kpi-value{font-family:'Inter',sans-serif;font-size:20px;font-weight:700;}
 .kpi-value.g{color:var(--green);} .kpi-value.r{color:var(--red);} .kpi-value.b{color:var(--blue);} .kpi-value.a{color:var(--amber);}
 
 /* Cards */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;}
-.card-title{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
+.card-title{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:18px;text-transform:uppercase;letter-spacing:.8px;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
 .grid-7-3{display:grid;grid-template-columns:7fr 3fr;gap:8px;margin-bottom:8px;}
@@ -86,16 +86,16 @@ tr:hover td{background:var(--surface2);}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .cal-nav button{background:var(--surface2);border:1px solid var(--border2);color:var(--text);width:26px;height:26px;border-radius:3px;cursor:pointer;font-size:11px;}
 .cal-month{font-family:'Inter',sans-serif;font-size:13px;font-weight:700;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
 .cal-dh{text-align:center;font-size:7px;letter-spacing:1px;color:var(--muted);padding:3px 0 7px;text-transform:uppercase;}
-.cal-day{min-height:68px;border-radius:5px;padding:6px 8px;border:1px solid var(--border);background:var(--surface2);transition:border-color .15s;}
+.cal-day{min-height:90px;border-radius:8px;padding:10px 12px;border:1px solid var(--border);background:var(--surface2);transition:border-color .15s;}
 .cal-day.empty{background:transparent;border-color:transparent;}
 .cal-day.win{background:var(--green-dim);border-color:#4caf7d25;}
 .cal-day.loss{background:var(--red-dim);border-color:#c9606025;}
-.cal-dn{font-size:8px;color:var(--muted);margin-bottom:3px;}
-.cal-pnl{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;}
+.cal-dn{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.cal-pnl{font-family:'Inter',sans-serif;font-size:15px;font-weight:800;}
 .cal-pnl.pos{color:var(--green);} .cal-pnl.neg{color:var(--red);}
-.cal-tc{font-size:7px;color:var(--muted);margin-top:1px;}
+.cal-tc{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600;}
 
 /* Weekly table */
 .week-row{cursor:pointer;}
@@ -684,7 +684,12 @@ function renderDashCalendar(){
     html+=`<div class="${cls}" ${onclick}>
       <div class="cal-dn">${d}</div>
       ${dt.length
-        ? `<div class="cal-pnl ${dp>=0?'pos':'neg'}">${fmt$(dp)}</div><div class="cal-tc">${dt.length}t</div>`
+        ? (()=>{
+            const dayRR = dt.reduce((s,t)=>s+(parseFloat(t.rr)||0),0);
+            const rrStr = dayRR>=0 ? '+'+dayRR.toFixed(1)+'R' : dayRR.toFixed(1)+'R';
+            const rrCol = dayRR>0?'var(--green)':dayRR<0?'var(--red)':'var(--muted)';
+            return `<div class="cal-pnl ${dp>=0?'pos':'neg'}">${fmt$(dp)}</div><div class="cal-tc" style="color:${rrCol};font-weight:600">${rrStr}</div>`;
+          })()
         : `<div class="cal-tc" style="margin-top:4px">—</div>`}
     </div>`;
   }
@@ -836,7 +841,7 @@ function drawWRGauge(wr,w,l,be){
   canvas.width=W; canvas.height=H;
   ctx.clearRect(0,0,W,H);
   ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,0);
-  ctx.strokeStyle=isLM()?'#e0e0e0':'#252525'; ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
+  ctx.strokeStyle=isLM()?'#d8d8d8':'#2a2a2a'; ctx.lineWidth=8; ctx.lineCap='round'; ctx.stroke();
   const total=w+l+be||1;
   if(w>0){
     ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,Math.PI+Math.PI*(w/total));
@@ -857,7 +862,7 @@ function drawPFDonut(pf){
   canvas.width=S; canvas.height=S;
   ctx.clearRect(0,0,S,S);
   ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle=isLM()?'#e0e0e0':'#252525'; ctx.lineWidth=7; ctx.stroke();
+  ctx.strokeStyle=isLM()?'#d8d8d8':'#2a2a2a'; ctx.lineWidth=7; ctx.stroke();
   const pct=Math.min(pf/3,1);
   const col=pf>=1.5?cPos():pf>=1?'rgba(154,138,80,0.85)':cNeg();
   ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*pct);
@@ -1048,7 +1053,12 @@ function renderCalendar(){
                       (isWknd?'style="opacity:.3"':'');
     html+=`<div class="${cls}" ${clickable}>
       <div class="cal-dn">${d}</div>
-      ${dt.length?`<div class="cal-pnl ${dp>=0?'pos':'neg'}">${fmt$(dp)}</div><div class="cal-tc">${dt.length}t</div>`:'<div class="cal-tc" style="margin-top:4px">—</div>'}
+      ${dt.length?(()=>{
+        const dayRR = dt.reduce((s,t)=>s+(parseFloat(t.rr)||0),0);
+        const rrStr = dayRR>=0 ? '+'+dayRR.toFixed(1)+'R' : dayRR.toFixed(1)+'R';
+        const rrCol = dayRR>0?'var(--green)':dayRR<0?'var(--red)':'var(--muted)';
+        return `<div class="cal-pnl ${dp>=0?'pos':'neg'}">${fmt$(dp)}</div><div class="cal-tc" style="color:${rrCol};font-weight:600">${rrStr}</div>`;
+      })():'<div class="cal-tc" style="margin-top:4px">—</div>'}
     </div>`;
   }
   grid.innerHTML=html;
