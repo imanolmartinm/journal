@@ -14,13 +14,13 @@
 <style>
 :root {
   --bg:#0f0f0f; --surface:#161616; --surface2:#1e1e1e; --border:#252525; --border2:#303030;
-  --green:#5a9a72; --green-dim:#5a9a7215; --red:#9a5a5a; --red-dim:#9a5a5a15;
+  --green:#26d47a; --green-dim:#26d47a18; --red:#f03a50; --red-dim:#f03a5018;
   --amber:#9a8a50; --amber-dim:#9a8a5015; --blue:#4d9fff; --blue-dim:#4d9fff18;
   --text:#f0f0f0; --muted:#777; --muted2:#252525;
 }
 html.light {
   --bg:#f5f6f8; --surface:#ffffff; --surface2:#f0f1f4; --border:#e2e4e9; --border2:#d0d3da;
-  --green:#2d7a4a; --green-dim:#2d7a4a12; --red:#8a3030; --red-dim:#8a303012;
+  --green:#1ab865; --green-dim:#1ab86515; --red:#d63545; --red-dim:#d6354515;
   --amber:#7a6020; --amber-dim:#7a602012; --blue:#2a5090; --blue-dim:#2a509012;
   --text:#1a1a1a; --muted:#999; --muted2:#e2e4e9;
 }
@@ -579,6 +579,33 @@ tr:hover td{background:var(--surface2);}
   </div>
   <div class="form-group full"><label>Comments</label><textarea id="f-comments" rows="2" placeholder="What went well, what to improve..."></textarea></div>
 
+  <!-- Chart Links & Images -->
+  <div class="form-group full">
+    <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">📸 CHARTS</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input class="inp" type="url" id="f-chart1" placeholder="TradingView link 1">
+      <input class="inp" type="url" id="f-chart2" placeholder="TradingView link 2">
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      <label id="img1-lbl" style="cursor:pointer;border:1px dashed var(--border2);border-radius:6px;height:60px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);overflow:hidden">
+        <input type="file" id="f-img1" accept="image/*" style="display:none" onchange="previewImg(this,'img1-lbl','img1-prev')">
+        <span id="img1-prev">+ Foto 1</span>
+      </label>
+      <label id="img2-lbl" style="cursor:pointer;border:1px dashed var(--border2);border-radius:6px;height:60px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);overflow:hidden">
+        <input type="file" id="f-img2" accept="image/*" style="display:none" onchange="previewImg(this,'img2-lbl','img2-prev')">
+        <span id="img2-prev">+ Foto 2</span>
+      </label>
+      <label id="img3-lbl" style="cursor:pointer;border:1px dashed var(--border2);border-radius:6px;height:60px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);overflow:hidden">
+        <input type="file" id="f-img3" accept="image/*" style="display:none" onchange="previewImg(this,'img3-lbl','img3-prev')">
+        <span id="img3-prev">+ Foto 3</span>
+      </label>
+      <label id="img4-lbl" style="cursor:pointer;border:1px dashed var(--border2);border-radius:6px;height:60px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);overflow:hidden">
+        <input type="file" id="f-img4" accept="image/*" style="display:none" onchange="previewImg(this,'img4-lbl','img4-prev')">
+        <span id="img4-prev">+ Foto 4</span>
+      </label>
+    </div>
+  </div>
+
   <div class="form-actions">
     <button class="btn-delete" id="btn-del" onclick="deleteCurrentTrade()" style="display:none">Delete</button>
     <button class="btn-cancel" onclick="closeModal()">Cancel</button>
@@ -823,7 +850,7 @@ function drawKpiSparkline(){
   const xs=pts.map((_,i)=>i/(pts.length-1)*w);
   const ys=pts.map(p=>h-((p-min)/range)*(h-2)-1);
   const isPos=pts[pts.length-1]>=0;
-  const col=isPos?'rgba(0,200,122,':'rgba(255,59,48,';
+  const col=isPos?'rgba(0,230,118,':'rgba(255,23,68,';
   ctx.beginPath(); ctx.moveTo(xs[0],ys[0]);
   for(let i=1;i<xs.length;i++) ctx.lineTo(xs[i],ys[i]);
   ctx.strokeStyle=col+'0.9)'; ctx.lineWidth=1.5; ctx.stroke();
@@ -1244,12 +1271,34 @@ function openModal(id=null){
     document.getElementById('f-setup').value=t.setup||'';
     document.getElementById('f-conf').value=t.confluence||'';
     document.getElementById('f-comments').value=t.comments||'';
+    document.getElementById('f-chart1').value=t.chart1||'';
+    document.getElementById('f-chart2').value=t.chart2||'';
+    document.getElementById('f-chart3').value=t.chart3||'';
+    document.getElementById('f-chart4').value=t.chart4||'';
+    // Restore images
+    ['img1','img2','img3','img4'].forEach(k=>{
+      if(t[k]){
+        const lbl=document.getElementById(k+'-lbl');
+        lbl.style.backgroundImage=`url(${t[k]})`;
+        lbl.style.backgroundSize='cover';
+        lbl.style.backgroundPosition='center';
+        document.getElementById(k+'-prev').style.display='none';
+      }
+    });
   } else {
     document.getElementById('modal-title').textContent='Add Trade';
     delBtn.style.display='none';
     document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
     ['f-stage','f-mode','f-rating','f-dir','f-sess','f-emo','f-entrycom','f-exitcom','f-news'].forEach(id=>{document.getElementById(id).selectedIndex=0;});
-    ['f-risk','f-slpips','f-rr','f-pips','f-result','f-dd','f-entrytime','f-dur','f-hodlod','f-setup','f-conf','f-comments'].forEach(id=>{document.getElementById(id).value='';});
+    ['f-risk','f-slpips','f-rr','f-pips','f-result','f-dd','f-entrytime','f-dur','f-hodlod','f-setup','f-conf','f-comments','f-chart1','f-chart2','f-chart3','f-chart4'].forEach(id=>{document.getElementById(id).value='';});
+    ['img1','img2','img3','img4'].forEach(k=>{
+      const lbl=document.getElementById(k+'-lbl');
+      if(lbl){ lbl.style.backgroundImage='none'; }
+      const prev=document.getElementById(k+'-prev');
+      if(prev){ prev.style.display=''; }
+      const inp=document.getElementById('f-'+k);
+      if(inp){ inp.value=''; }
+    });
     document.getElementById('f-rt').value='1';
   }
   document.getElementById('modal').classList.add('open');
@@ -1257,7 +1306,30 @@ function openModal(id=null){
 
 function closeModal(){ document.getElementById('modal').classList.remove('open'); editingId=null; }
 
-function saveTrade(){
+function previewImg(input, lblId, prevId){
+  const file = input.files[0];
+  if(!file) return;
+  const lbl = document.getElementById(lblId);
+  const reader = new FileReader();
+  reader.onload = e => {
+    lbl.style.backgroundImage = `url(${e.target.result})`;
+    lbl.style.backgroundSize = 'cover';
+    lbl.style.backgroundPosition = 'center';
+    document.getElementById(prevId).style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function saveTrade(){
   const trade={
     id:editingId||Date.now().toString(),
     date:document.getElementById('f-date').value,
@@ -1285,6 +1357,14 @@ function saveTrade(){
     setup:document.getElementById('f-setup').value,
     confluence:document.getElementById('f-conf').value,
     comments:document.getElementById('f-comments').value,
+    chart1:document.getElementById('f-chart1').value,
+    chart2:document.getElementById('f-chart2').value,
+    chart3:document.getElementById('f-chart3').value,
+    chart4:document.getElementById('f-chart4').value,
+    img1:document.getElementById('f-img1').files[0] ? await toBase64(document.getElementById('f-img1').files[0]) : (editingId ? (trades.find(t=>t.id===editingId)||{}).img1||'' : ''),
+    img2:document.getElementById('f-img2').files[0] ? await toBase64(document.getElementById('f-img2').files[0]) : (editingId ? (trades.find(t=>t.id===editingId)||{}).img2||'' : ''),
+    img3:document.getElementById('f-img3').files[0] ? await toBase64(document.getElementById('f-img3').files[0]) : (editingId ? (trades.find(t=>t.id===editingId)||{}).img3||'' : ''),
+    img4:document.getElementById('f-img4').files[0] ? await toBase64(document.getElementById('f-img4').files[0]) : (editingId ? (trades.find(t=>t.id===editingId)||{}).img4||'' : ''),
   };
   if(editingId){ const idx=trades.findIndex(t=>t.id===editingId); if(idx!==-1) trades[idx]=trade; }
   else trades.push(trade);
